@@ -1,0 +1,22 @@
+---
+- name: Server A (Subnet 1)
+  hosts: server_a
+  become: true
+  
+  tasks:
+  - name: Route permanent in Netplan eintragen
+    copy:
+      dest: /etc/netplan/60-static-routes.yaml
+      content: |
+        network:
+          version: 2
+          ethernets:
+            eth1:
+              routes:
+                - to: 192.168.122.0/24
+                  via: 192.168.121.10
+    notify: apply netplan
+
+  handlers:
+  - name: apply netplan
+    command: netplan apply

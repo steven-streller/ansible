@@ -1,0 +1,20 @@
+---
+- name: Nginx installieren
+  hosts: nginx
+  become: true
+  
+  tasks:
+  - name: Nginx installieren
+    apt:
+      name: nginx
+      state: present
+      update_cache: yes
+  - name: Nginx starten und aktivieren
+    service:
+      name: nginx
+      state: started
+      enabled: yes
+  - name: Nginx-Standardseite anpassen
+    copy:
+      dest: /var/www/html/index.html
+      content: "<h1>Willkommen auf dem Nginx-Server!</h1>"

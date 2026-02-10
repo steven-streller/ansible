@@ -1,0 +1,12 @@
+---
+- name: Gateway (Verbindet Subnetz 1 und Subnetz 2)
+  hosts: gateway
+  become: true
+  
+  tasks:
+  - name: IP Forwarding aktivieren
+    ansible.builtin.sysctl:
+      name: net.ipv4.ip_forward
+      value: '1'
+      state: present
+      reload: yes

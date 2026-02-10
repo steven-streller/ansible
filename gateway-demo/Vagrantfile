@@ -1,0 +1,63 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2204"
+
+  # --- Server A (Subnetz 1) ---
+  config.vm.define "server_a" do |server_a|
+    server_a.vm.hostname = "server-a"
+    server_a.vm.network "private_network", ip: "192.168.121.20"
+    
+    server_a.vm.provider :libvirt do |lv|
+      lv.memory = 1024
+      lv.cpus = 1
+    end
+
+    server_a.vm.provision "ansible" do |ansible|
+      ansible.playbook = "server_a.yml"
+      ansible.compatibility_mode = "2.0"
+      ansible.extra_vars = {
+        ansible_python_interpreter: "/usr/bin/python3"
+      }
+    end
+  end
+
+  # --- Server B (Subnetz 2) ---
+  config.vm.define "server_b" do |server_b|
+    server_b.vm.hostname = "server-b"
+    server_b.vm.network "private_network", ip: "192.168.122.20"
+    
+    server_b.vm.provider :libvirt do |lv|
+      lv.memory = 1024
+      lv.cpus = 1
+    end
+
+    server_b.vm.provision "ansible" do |ansible|
+      ansible.playbook = "server_b.yml"
+      ansible.compatibility_mode = "2.0"
+      ansible.extra_vars = {
+        ansible_python_interpreter: "/usr/bin/python3"
+      }
+    end
+  end
+
+  # --- Gateway (mit zwei Interfaces) ---
+  config.vm.define "gateway" do |gateway|
+    gateway.vm.hostname = "gateway"
+    # Interface 1: Subnetz 1 (192.168.121.0/24)
+    gateway.vm.network "private_network", ip: "192.168.121.10"
+    # Interface 2: Subnetz 2 (192.168.122.0/24)
+    gateway.vm.network "private_network", ip: "192.168.122.10"
+    
+    gateway.vm.provider :libvirt do |lv|
+      lv.memory = 1024
+      lv.cpus = 2
+    end
+
+    gateway.vm.provision "ansible" do |ansible|
+      ansible.playbook = "gateway.yml"
+      ansible.compatibility_mode = "2.0"
+      ansible.extra_vars = {
+        ansible_python_interpreter: "/usr/bin/python3"
+      }
+    end
+  end
+end
