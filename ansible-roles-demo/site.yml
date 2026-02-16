@@ -1,0 +1,8 @@
+---
+- name: Install Common Packages and Nginx
+  hosts: all
+  become: true
+
+  roles:
+    - common
+    - nginx
