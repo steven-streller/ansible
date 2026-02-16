@@ -1,76 +1,56 @@
-# We strongly recommend using the required_providers block to set the
-# Azure Provider source and version being used
-terraform {
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 4.0"
-    }
-  }
-}
-
-# Configure the Microsoft Azure Provider
-provider "azurerm" {
-  features {}
-  subscription_id = var.subscription_id
-}
-
 # Create a resource group
-resource "azurerm_resource_group" "example" {
-  name     = "example-resources"
-  location = "Switzerland North"
-  tags = {
-    environment = "Terraform Demo"
-    source      = "Terraform"
-  }
+resource "azurerm_resource_group" "main" {
+  name     = "${var.project_name}-rg"
+  location = var.location
+  tags = var.common_tags
 }
 
 # Create a virtual network
-resource "azurerm_virtual_network" "example" {
-  name                = "example-vnet"
-  address_space       = ["10.0.0.0/16"]
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
+resource "azurerm_virtual_network" "main" {
+  name                = "${var.project_name}-vnet"
+  address_space       = var.vnet_address_space
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
 }
 
 # Create a subnet
-resource "azurerm_subnet" "example" {
-  name                 = "example-subnet"
-  resource_group_name  = azurerm_resource_group.example.name
-  virtual_network_name = azurerm_virtual_network.example.name
+resource "azurerm_subnet" "main" {
+  name                 = "${var.project_name}-subnet"
+  resource_group_name  = azurerm_resource_group.main.name
+  virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.2.0/24"]
 }
 
 # Create a network interface
-resource "azurerm_network_interface" "example" {
-  name                = "example-nic"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
+resource "azurerm_network_interface" "main" {
+  name                = "${var.project_name}-nic"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
 
   ip_configuration {
     name                          = "testconfiguration1"
-    subnet_id                     = azurerm_subnet.example.id
+    subnet_id                     = azurerm_subnet.main.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.example.id
+    public_ip_address_id          = azurerm_public_ip.main.id
   }
 }
 
 # Create a virtual machine
-resource "azurerm_linux_virtual_machine" "example" {
-  name                = "example-vm"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
-  size                = "Standard_D2s_v3"
+resource "azurerm_linux_virtual_machine" "main" {
+  name                = "${var.project_name}-vm"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  size                = var.vm_size
 
-  admin_username = "azureuser"
+  admin_username = var.admin_username
 
   admin_ssh_key {
-    username   = "azureuser"
-    public_key = file("~/.ssh/id_ed25519.pub")
+    username   = var.admin_username
+    public_key = file(var.ssh_public_key_path)
   }
 
   network_interface_ids = [
-    azurerm_network_interface.example.id,
+    azurerm_network_interface.main.id,
   ]
 
   os_disk {
@@ -86,18 +66,18 @@ resource "azurerm_linux_virtual_machine" "example" {
   }
 }
 
-resource "azurerm_public_ip" "example" {
-  name                = "example-pip"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
+resource "azurerm_public_ip" "main" {
+  name                = "${var.project_name}-pip"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   allocation_method   = "Static"
   sku                 = "Standard"
 }
 
 resource "azurerm_network_security_group" "ssh" {
-  name                = "ssh-nsg"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
+  name                = "${var.project_name}-ssh-nsg"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
 
   security_rule {
     name                       = "SSH"
@@ -107,7 +87,7 @@ resource "azurerm_network_security_group" "ssh" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "22"
-    source_address_prefix      = "*"
+    source_address_prefix      = var.admin_remote_ip
     destination_address_prefix = "*"
   }
 
@@ -124,7 +104,7 @@ resource "azurerm_network_security_group" "ssh" {
   }
 }
 
-resource "azurerm_subnet_network_security_group_association" "example" {
-  subnet_id                 = azurerm_subnet.example.id
+resource "azurerm_subnet_network_security_group_association" "main" {
+  subnet_id                 = azurerm_subnet.main.id
   network_security_group_id = azurerm_network_security_group.ssh.id
 }

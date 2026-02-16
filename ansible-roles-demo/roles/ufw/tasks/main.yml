@@ -1,0 +1,20 @@
+---
+- name: UFW installieren
+  apt:
+    name: ufw
+    state: present
+    update_cache: yes
+- name: UFW aktivieren
+  ufw:
+    state: enabled
+    policy: deny
+- name: HTTP-Verkehr erlauben
+  ufw:
+    rule: allow
+    port: 80
+    proto: tcp
+- name: SSH-Verkehr erlauben
+  ufw:
+    rule: allow      
+    port: 22
+    proto: tcp
